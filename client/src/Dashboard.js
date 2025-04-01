@@ -230,7 +230,10 @@ function Dashboard({ name, email, onLogout }) {
     const renderAboutContent = () => (
         <div className="about-section">
             <h2>About Campus Closet</h2>
-            <p>This is where you would put information about your company.</p>
+            <p>Campus Closet is dedicated to fostering a vibrant and sustainable clothing culture within the Atlanta University Center. 
+                Through our platform for renting, buying, selling, and swapping items – from iconic Founders Day attire to everyday 
+                wear and creative pieces – we aim to build community, empower students to express themselves, 
+                and make fashion accessible for all..</p>
             {/* Add your about us content here */}
         </div>
     );
@@ -238,7 +241,7 @@ function Dashboard({ name, email, onLogout }) {
     const renderCommunityContent = () => (
         <div className="community-section">
             <h2>Community</h2>
-            <p>This is where you would build out community features or information.</p>
+            <p>Here is a list of initiaives to provide gently worn or used clothing to AUC students and a list of secondhand vendors.</p>
             {/* Add your community content here */}
         </div>
     );
