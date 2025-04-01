@@ -127,7 +127,7 @@ app.post('/verify', async (req, res) => {
 
 // Endpoint to post a new clothing listing
 app.post('/listings', upload.single('image'), async (req, res) => {
-  const { title, size, itemType, condition, washInstructions, startDate, endDate, pricePerDay, totalPrice } = req.body;
+  const { title, size, itemType, condition, washInstructions, startDate, endDate, pricePerDay, totalPrice, phoneNumber, contactEmail } = req.body;
   const { file } = req;
   const userEmail = req.headers['user-id']; 
   
@@ -141,7 +141,9 @@ app.post('/listings', upload.single('image'), async (req, res) => {
       startDate,
       endDate,
       pricePerDay,
-      hasFile: !!file
+      hasFile: !!file,
+      phoneNumber, // Log the received phone number
+      contactEmail // Log the received contact email
   });
 
   if (!userEmail) {

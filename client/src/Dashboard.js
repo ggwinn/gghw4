@@ -72,7 +72,7 @@ function Dashboard({ name, email, onLogout }) {
                 console.error('Failed to load Square SDK');
             };
             document.body.appendChild(script);
-            
+
             return () => {
                 document.body.removeChild(script);
             };
@@ -124,9 +124,9 @@ function Dashboard({ name, email, onLogout }) {
         return (
             <div className="listings-grid">
                 {placeholders.map((item) => (
-                    <div 
-                        key={item.id} 
-                        className="listing-card" 
+                    <div
+                        key={item.id}
+                        className="listing-card"
                         onClick={() => handleListingClick(item)}
                     >
                         <img src={item.imageURL} alt={item.title} />
@@ -177,14 +177,14 @@ function Dashboard({ name, email, onLogout }) {
                     ) : filteredResults.length > 0 ? (
                         <div className="listings-grid">
                             {filteredResults.map((listing) => (
-                                <div 
-                                    key={listing.id} 
+                                <div
+                                    key={listing.id}
                                     className="listing-card"
                                     onClick={() => handleListingClick(listing)}
                                 >
-                                    <img 
-                                        src={listing.imageURL || "https://via.placeholder.com/300x200?text=No+Image"} 
-                                        alt={listing.title} 
+                                    <img
+                                        src={listing.imageURL || "https://via.placeholder.com/300x200?text=No+Image"}
+                                        alt={listing.title}
                                     />
                                     <div className="listing-info">
                                         <h3>{listing.title}</h3>
@@ -208,7 +208,7 @@ function Dashboard({ name, email, onLogout }) {
 
             {/* Listing Detail Modal */}
             {selectedListing && (
-                <ListingDetailModal 
+                <ListingDetailModal
                     listing={selectedListing}
                     onClose={handleCloseModal}
                     userEmail={email}

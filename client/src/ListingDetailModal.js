@@ -8,13 +8,13 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [totalPrice, setTotalPrice] = useState(0);
-  const [paymentStatus, setPaymentStatus] = useState('initial'); // initial, processing, success, error
+  const [paymentStatus, setPaymentStatus] = useState('initial');
   const [errorMessage, setErrorMessage] = useState('');
   const [squarePaymentForm, setSquarePaymentForm] = useState(null);
   const [cardButtonRendered, setCardButtonRendered] = useState(false);
-  const [pickupLocation, setPickupLocation] = useState(''); // Add this
-  const [dropoffLocation, setDropoffLocation] = useState(''); // Add this
-  
+  const [pickupLocation, setPickupLocation] = useState('');
+  const [dropoffLocation, setDropoffLocation] = useState('');
+
   // Calculate available date range (from listing's startDate to endDate)
   const availableStartDate = new Date(listing.startDate);
   const availableEndDate = new Date(listing.endDate);
@@ -36,7 +36,7 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
     if (window.Square && totalPrice > 0 && !cardButtonRendered) {
       initializeSquarePayment();
     }
-    
+
     return () => {
       // Clean up Square payment form if it exists
       if (squarePaymentForm) {
@@ -55,7 +55,7 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
       const payments = window.Square.payments(appId, locationId);
       const card = await payments.card();
       await card.attach('#card-container');
-      
+
       setSquarePaymentForm(card);
       setCardButtonRendered(true);
     } catch (error) {
@@ -118,15 +118,15 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close-btn" onClick={onClose}>×</button>
-        
+
         <div className="modal-grid">
           <div className="modal-image">
             <img src={listing.imageURL} alt={listing.title} />
           </div>
-          
+
           <div className="modal-details">
             <h2>{listing.title}</h2>
-            
+
             <div className="item-details">
               <p><strong>Size:</strong> {listing.size}</p>
               <p><strong>Type:</strong> {listing.itemType}</p>
@@ -134,16 +134,25 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
               <p><strong>Wash Instructions:</strong> {listing.washInstructions}</p>
               <p><strong>Price:</strong> ${listing.pricePerDay}/day</p>
             </div>
-            
+
             <div className="availability">
               <h3>Available for Rent</h3>
               <p>From {availableStartDate.toLocaleDateString()} to {availableEndDate.toLocaleDateString()}</p>
             </div>
-            
+
+            {/* Section to display the seller's contact information */}
+            <div className="contact-info">
+              <h3>Seller Contact Information</h3>
+              {/* Display the phone number from the listing data */}
+              <p><strong>Phone:</strong> {listing.phone_number}</p>
+              {/* Display the contact email from the listing data */}
+              <p><strong>Email:</strong> {listing.contact_email}</p>
+            </div>
+
             {paymentStatus !== 'success' && (
               <form onSubmit={handlePayment} className="rental-form">
                 <h3>Select Rental Period</h3>
-                
+
                 <div className="date-inputs">
                   <div>
                     <label>Start Date</label>
@@ -159,7 +168,7 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
                       className="date-input"
                     />
                   </div>
-                  
+
                   <div>
                     <label>End Date</label>
                     <DatePicker
@@ -176,30 +185,30 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
                   </div>
                 </div>
                 {/* Pickup and drop off location*/}
-                  <div>
-                    <label htmlFor="pickupLocation">Pickup Location:</label>
-                    <input
-                      type="text"
-                      id="pickupLocation"
-                      className="date-input"
-                      value={pickupLocation}
-                      onChange={(e) => setPickupLocation(e.target.value)}
-                      required
-                    />
-                  </div>
+                <div>
+                  <label htmlFor="pickupLocation">Pickup Location:</label>
+                  <input
+                    type="text"
+                    id="pickupLocation"
+                    className="date-input"
+                    value={pickupLocation}
+                    onChange={(e) => setPickupLocation(e.target.value)}
+                    required
+                  />
+                </div>
 
-                  <div>
-                    <label htmlFor="dropoffLocation">Drop-off Location:</label>
-                    <input
-                      type="text"
-                      id="dropoffLocation"
-                      className="date-input"
-                      value={dropoffLocation}
-                      onChange={(e) => setDropoffLocation(e.target.value)}
-                      required
-                    />
-                  </div>
-                
+                <div>
+                  <label htmlFor="dropoffLocation">Drop-off Location:</label>
+                  <input
+                    type="text"
+                    id="dropoffLocation"
+                    className="date-input"
+                    value={dropoffLocation}
+                    onChange={(e) => setDropoffLocation(e.target.value)}
+                    required
+                  />
+                </div>
+
                 {totalPrice > 0 && (
                   <div className="payment-section">
                     <div className="total-price-display">
@@ -207,13 +216,13 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
                       <span className="price">${totalPrice.toFixed(2)}</span>
                       <span className="days">({Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1} days)</span>
                     </div>
-                    
+
                     <div className="payment-form">
                       <h3>Payment Details</h3>
                       <div id="card-container" className="square-card"></div>
-                      
-                      <button 
-                        type="submit" 
+
+                      <button
+                        type="submit"
                         className="pay-button"
                         disabled={paymentStatus === 'processing' || !cardButtonRendered || !startDate || !endDate}
                       >
@@ -222,7 +231,7 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
                     </div>
                   </div>
                 )}
-                
+
                 {errorMessage && (
                   <div className="error-message">
                     {errorMessage}
@@ -230,7 +239,7 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
                 )}
               </form>
             )}
-            
+
             {paymentStatus === 'success' && (
               <div className="success-message">
                 <h3>Rental Confirmed!</h3>
