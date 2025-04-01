@@ -12,6 +12,8 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
   const [errorMessage, setErrorMessage] = useState('');
   const [squarePaymentForm, setSquarePaymentForm] = useState(null);
   const [cardButtonRendered, setCardButtonRendered] = useState(false);
+  const [pickupLocation, setPickupLocation] = useState(''); // Add this
+  const [dropoffLocation, setDropoffLocation] = useState(''); // Add this
   
   // Calculate available date range (from listing's startDate to endDate)
   const availableStartDate = new Date(listing.startDate);
@@ -64,49 +66,52 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
 
   const handlePayment = async (event) => {
     event.preventDefault();
-    
-    if (!startDate || !endDate) {
-      setErrorMessage('Please select rental dates');
+
+    // Update the validation to include pickup and dropoff locations
+    if (!startDate || !endDate || !pickupLocation || !dropoffLocation) {
+      setErrorMessage('Please select rental dates and specify pickup/drop-off locations.');
       return;
     }
-    
+
     setPaymentStatus('processing');
     setErrorMessage('');
-    
+
     try {
-        // Get a payment token from Square
-        let result;
-        try {
-          result = await squarePaymentForm.tokenize();
-          if (result.status !== 'OK') {
-            throw new Error(result.errors?.[0]?.message || 'Tokenization failed');
-          }
-        } catch (err) {
-          setPaymentStatus('error');
-          setErrorMessage(err.message || 'Tokenization failed');
-          return;
+      // Get a payment token from Square
+      let result;
+      try {
+        result = await squarePaymentForm.tokenize();
+        if (result.status !== 'OK') {
+          throw new Error(result.errors?.[0]?.message || 'Tokenization failed');
         }
-      
-        // Send the payment token to your server
-        const response = await axios.post('/api/process-payment', {
-          sourceId: result.token,
-          amount: totalPrice,
-          listingId: listing.id,
-          startDate: startDate.toISOString(),
-          endDate: endDate.toISOString(),
-          userEmail: userEmail
-        });
-      
-        if (response.data.success) {
-          setPaymentStatus('success');
-        } else {
-          setPaymentStatus('error');
-          setErrorMessage(response.data.message || 'Payment processing failed');
-        }
-      } catch (error) {
+      } catch (err) {
         setPaymentStatus('error');
-        setErrorMessage(error.message || 'Payment processing failed');
-      }      
+        setErrorMessage(err.message || 'Tokenization failed');
+        return;
+      }
+
+      // Send the payment token to your server
+      const response = await axios.post('/api/process-payment', {
+        sourceId: result.token,
+        amount: totalPrice,
+        listingId: listing.id,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        userEmail: userEmail,
+        pickupLocation: pickupLocation, // Add pickup location to the request
+        dropoffLocation: dropoffLocation // Add drop-off location to the request
+      });
+
+      if (response.data.success) {
+        setPaymentStatus('success');
+      } else {
+        setPaymentStatus('error');
+        setErrorMessage(response.data.message || 'Payment processing failed');
+      }
+    } catch (error) {
+      setPaymentStatus('error');
+      setErrorMessage(error.message || 'Payment processing failed');
+    }
   };
 
   return (
@@ -170,6 +175,30 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
                     />
                   </div>
                 </div>
+                {/* Pickup and drop off location*/}
+                  <div>
+                    <label htmlFor="pickupLocation">Pickup Location:</label>
+                    <input
+                      type="text"
+                      id="pickupLocation"
+                      className="date-input"
+                      value={pickupLocation}
+                      onChange={(e) => setPickupLocation(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="dropoffLocation">Drop-off Location:</label>
+                    <input
+                      type="text"
+                      id="dropoffLocation"
+                      className="date-input"
+                      value={dropoffLocation}
+                      onChange={(e) => setDropoffLocation(e.target.value)}
+                      required
+                    />
+                  </div>
                 
                 {totalPrice > 0 && (
                   <div className="payment-section">
