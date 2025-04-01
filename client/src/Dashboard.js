@@ -184,6 +184,8 @@ function Dashboard({ name, email, onLogout }) {
         <div className="community-section">
             <h2>Community</h2>
             <p>This is our page of to highlight AUC clothing initiatives and vendors</p>
+
+    
             {/* You can add more community content or vendor listings here */}
         </div>
     );
