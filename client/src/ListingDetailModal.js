@@ -140,14 +140,16 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
               <p>From {availableStartDate.toLocaleDateString()} to {availableEndDate.toLocaleDateString()}</p>
             </div>
 
-            {/* **HERE'S WHERE YOU ADD THE CONTACT INFO SECTION** */}
-            <div className="contact-info">
-              <h3>Seller Contact Information</h3>
-              {/* Display the phone number from the listing data */}
-              <p><strong>Phone:</strong> {listing.phone_number}</p>
-              {/* Display the contact email from the listing data */}
-              <p><strong>Email:</strong> {listing.contact_email}</p>
-            </div>
+            {/* Conditionally render the contact info section */}
+            {paymentStatus === 'success' && (
+              <div className="contact-info">
+                <h3>Seller Contact Information</h3>
+                {/* Display the phone number from the listing data */}
+                <p><strong>Phone:</strong> {listing.phone_number}</p>
+                {/* Display the contact email from the listing data */}
+                <p><strong>Email:</strong> {listing.contact_email}</p>
+              </div>
+            )}
 
             {paymentStatus !== 'success' && (
               <form onSubmit={handlePayment} className="rental-form">
