@@ -5,8 +5,6 @@ import ListingDetailModal from './ListingDetailModal';
 import './Dashboard.css';
 import './NavigationBar.css';
 
-import sistersClosetFlyer from '../public/images/sisters-closet-flyer.jpg'; // Add this line
-
 function Dashboard({ name, email, onLogout }) {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [showForm, setShowForm] = useState(false);
@@ -186,15 +184,6 @@ function Dashboard({ name, email, onLogout }) {
         <div className="community-section">
             <h2>Community</h2>
             <p>This is our page of to highlight AUC clothing initiatives and vendors</p>
-    
-            {/* First Vendor: My Sister's Closet */}
-            <div className="vendor-card">
-                <img src={sistersClosetFlyer} alt="My Sister's Closet Flyer" />
-                <a href="https://spelmancollegesga.weebly.com/my-sisters-closet.html" target="_blank" rel="noopener noreferrer">
-                    Visit My Sister's Closet on Instagram
-                </a>
-            </div>
-    
             {/* You can add more community content or vendor listings here */}
         </div>
     );
