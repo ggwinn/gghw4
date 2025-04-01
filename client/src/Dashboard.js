@@ -2,17 +2,47 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import PostListingForm from './PostListingForm';
 import ListingDetailModal from './ListingDetailModal';
-import './Dashboard.css';
+import './Dashboard.css'; // Reusing Dashboard styles
 
+/**
+ * Dashboard Component
+ *
+ * This component renders the main dashboard for logged-in users.
+ * It displays a search bar, a button to toggle the post listing form,
+ * a grid of available listings, and handles the display of listing details in a modal.
+ *
+ * @component
+ * @param {string} name - The name of the logged-in user.
+ * @param {string} email - The email of the logged-in user.
+ * @param {function} onLogout - A function to call when the user logs out.
+ * @returns {JSX.Element} The Dashboard component.
+ */
 function Dashboard({ name, email, onLogout }) {
     const [showForm, setShowForm] = useState(false);
-    const [listings, setListings] = useState([]);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [filteredResults, setFilteredResults] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [selectedListing, setSelectedListing] = useState(null);
+    /** @type {boolean} Controls the visibility of the PostListingForm. */
 
+    const [listings, setListings] = useState([]);
+    /** @type {Array<object>} An array of all available listings fetched from the backend. */
+
+    const [searchQuery, setSearchQuery] = useState('');
+    /** @type {string} The current search query entered by the user. */
+
+    const [filteredResults, setFilteredResults] = useState([]);
+    /** @type {Array<object>} An array of listings filtered based on the search query. */
+
+    const [isLoading, setIsLoading] = useState(true);
+    /** @type {boolean} Indicates whether the listings data is currently being loaded. */
+
+    const [error, setError] = useState('');
+    /** @type {string} An error message to display if fetching listings fails. */
+
+    const [selectedListing, setSelectedListing] = useState(null);
+    /** @type {object | null} The listing object that is currently selected for detailed view in the modal. */
+
+    /**
+     * Fetches the initial listings data from the backend when the component mounts.
+     * @effect
+     */
     useEffect(() => {
         const fetchListings = async () => {
             setIsLoading(true);
@@ -31,13 +61,19 @@ function Dashboard({ name, email, onLogout }) {
         fetchListings();
     }, []);
 
-    // Handle search
+    /**
+     * Filters the listings based on the search query.
+     * @effect
+     * @dependency {searchQuery}
+     * @dependency {listings}
+     */
     useEffect(() => {
         if (!searchQuery.trim()) {
             setFilteredResults(listings);
             return;
         }
 
+        // Filter listings based on title, size, itemType, or condition.
         const filtered = listings.filter(listing =>
             listing.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             listing.size?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -48,38 +84,30 @@ function Dashboard({ name, email, onLogout }) {
         setFilteredResults(filtered);
     }, [searchQuery, listings]);
 
-    // Function to handle clicking on a listing
+    /**
+     * Handles clicking on a listing to open the detail modal.
+     * @function handleListingClick
+     * @param {object} listing - The listing object that was clicked.
+     * @returns {void}
+     */
     const handleListingClick = (listing) => {
         setSelectedListing(listing);
     };
 
-    // Function to close the modal
+    /**
+     * Closes the listing detail modal.
+     * @function handleCloseModal
+     * @returns {void}
+     */
     const handleCloseModal = () => {
         setSelectedListing(null);
     };
 
-    // Load Square SDK when the component mounts
-    useEffect(() => {
-        // Only load if not already loaded
-        if (!window.Square) {
-            const script = document.createElement('script');
-            script.src = 'https://sandbox.web.squarecdn.com/v1/square.js';
-            script.async = true;
-            script.onload = () => {
-                console.log('Square SDK loaded');
-            };
-            script.onerror = () => {
-                console.error('Failed to load Square SDK');
-            };
-            document.body.appendChild(script);
-
-            return () => {
-                document.body.removeChild(script);
-            };
-        }
-    }, []);
-
-    // Function to render placeholder content when no listings are available
+    /**
+     * Renders placeholder content when no listings are available (for visual testing).
+     * @function renderPlaceholderContent
+     * @returns {JSX.Element} The placeholder content.
+     */
     const renderPlaceholderContent = () => {
         // Sample placeholder data for visual testing
         const placeholders = [
@@ -93,7 +121,9 @@ function Dashboard({ name, email, onLogout }) {
                 condition: 'Like new',
                 washInstructions: 'Machine wash cold',
                 startDate: new Date(2023, 5, 1).toISOString(),
-                endDate: new Date(2023, 8, 30).toISOString()
+                endDate: new Date(2023, 8, 30).toISOString(),
+                phone_number: '123-456-7890', // Added placeholder
+                contact_email: 'placeholder1@example.com' // Added placeholder
             },
             {
                 id: 'placeholder-2',
@@ -105,7 +135,9 @@ function Dashboard({ name, email, onLogout }) {
                 condition: 'Good',
                 washInstructions: 'Machine wash cold, tumble dry low',
                 startDate: new Date(2023, 5, 1).toISOString(),
-                endDate: new Date(2023, 8, 30).toISOString()
+                endDate: new Date(2023, 8, 30).toISOString(),
+                phone_number: '987-654-3210', // Added placeholder
+                contact_email: 'placeholder2@example.com' // Added placeholder
             },
             {
                 id: 'placeholder-3',
@@ -117,7 +149,9 @@ function Dashboard({ name, email, onLogout }) {
                 condition: 'New with tags',
                 washInstructions: 'Hand wash only',
                 startDate: new Date(2023, 5, 1).toISOString(),
-                endDate: new Date(2023, 8, 30).toISOString()
+                endDate: new Date(2023, 8, 30).toISOString(),
+                phone_number: '555-123-4567', // Added placeholder
+                contact_email: 'placeholder3@example.com' // Added placeholder
             }
         ];
 

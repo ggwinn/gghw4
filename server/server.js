@@ -211,7 +211,9 @@ app.post('/listings', upload.single('image'), async (req, res) => {
               startDate, // Changed from dateAvailable 
               endDate,   // Added end date
               pricePerDay, // Changed from price
-              imageURL
+              imageURL,
+              phone_number: phoneNumber, // Include phone number
+              contact_email: contactEmail // Include contact email
           }])
           .select();
 

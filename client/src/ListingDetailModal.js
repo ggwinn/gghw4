@@ -132,7 +132,7 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
               <p><strong>Type:</strong> {listing.itemType}</p>
               <p><strong>Condition:</strong> {listing.condition}</p>
               <p><strong>Wash Instructions:</strong> {listing.washInstructions}</p>
-              <p><strong>Price:</strong> ${listing.pricePerDay}/day</p>
+              <p><strong>Price:</strong> ${listing.pricePerDay}</p>
             </div>
 
             <div className="availability">
@@ -140,7 +140,7 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
               <p>From {availableStartDate.toLocaleDateString()} to {availableEndDate.toLocaleDateString()}</p>
             </div>
 
-            {/* Section to display the seller's contact information */}
+            {/* **HERE'S WHERE YOU ADD THE CONTACT INFO SECTION** */}
             <div className="contact-info">
               <h3>Seller Contact Information</h3>
               {/* Display the phone number from the listing data */}
