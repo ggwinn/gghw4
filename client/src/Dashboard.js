@@ -7,9 +7,9 @@ import './NavigationBar.css';
 
 // Import flyer images
 import sistersClosetFlyer from './images/sisters-closet-flyer.jpg';
-import breakingCycleFlyer from './images/breaking-cycle-flyer.jpg';
-import stylingsoflyFlyer from './images/stylingsofly-flyer.jpg';
-import anotherVendorFlyer from './images/another-vendor-flyer.jpg'; // Example of a new vendor image
+//import breakingCycleFlyer from './images/breaking-cycle-flyer.jpg';
+//import stylingsoflyFlyer from './images/stylingsofly-flyer.jpg';
+//import anotherVendorFlyer from './images/another-vendor-flyer.jpg'; // Example of a new vendor image
 
 function Dashboard({ name, email, onLogout }) {
     const [activeTab, setActiveTab] = useState('dashboard');
@@ -240,25 +240,6 @@ function Dashboard({ name, email, onLogout }) {
                     <img src={sistersClosetFlyer} alt="My Sister's Closet Flyer" />
                     <a href="https://www.instagram.com/mysisterscloset/" target="_blank" rel="noopener noreferrer">
                         Visit My Sister's Closet on Instagram
-                    </a>
-                </div>
-                <div className="vendor-card">
-                    <img src={breakingCycleFlyer} alt="Breaking the Cycle Global Flyer" />
-                    <a href="https://www.instagram.com/breakingthecycleglobal/" target="_blank" rel="noopener noreferrer">
-                        Visit Breaking the Cycle Global on Instagram
-                    </a>
-                </div>
-                <div className="vendor-card">
-                    <img src={stylingsoflyFlyer} alt="Stylingsoflylikeag6 Flyer" />
-                    <a href="https://www.instagram.com/stylingsoflylikeag6/" target="_blank" rel="noopener noreferrer">
-                        Visit Stylingsoflylikeag6 on Instagram
-                    </a>
-                </div>
-                {/* Example of adding another vendor */}
-                <div className="vendor-card">
-                    <img src={anotherVendorFlyer} alt="Another Great Vendor Flyer" />
-                    <a href="https://www.instagram.com/anothergreatvendor/" target="_blank" rel="noopener noreferrer">
-                        Visit Another Great Vendor on Instagram
                     </a>
                 </div>
             </div>
