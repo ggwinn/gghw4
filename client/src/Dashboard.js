@@ -5,12 +5,6 @@ import ListingDetailModal from './ListingDetailModal';
 import './Dashboard.css';
 import './NavigationBar.css';
 
-// Import flyer images
-import sistersClosetFlyer from './images/sisters-closet-flyer.jpg';
-//import breakingCycleFlyer from './images/breaking-cycle-flyer.jpg';
-//import stylingsoflyFlyer from './images/stylingsofly-flyer.jpg';
-//import anotherVendorFlyer from './images/another-vendor-flyer.jpg'; // Example of a new vendor image
-
 function Dashboard({ name, email, onLogout }) {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [showForm, setShowForm] = useState(false);
@@ -74,51 +68,7 @@ function Dashboard({ name, email, onLogout }) {
     };
 
     const renderPlaceholderContent = () => {
-        const placeholders = [
-            {
-                id: 'placeholder-1',
-                title: 'Blue Denim Jacket',
-                size: 'M',
-                itemType: 'Jacket',
-                pricePerDay: '5.99',
-                imageURL: 'https://via.placeholder.com/300x200?text=Denim+Jacket',
-                condition: 'Like new',
-                washInstructions: 'Machine wash cold',
-                startDate: new Date(2023, 5, 1).toISOString(),
-                endDate: new Date(2023, 8, 30).toISOString(),
-                phone_number: '123-456-7890',
-                contact_email: 'placeholder1@example.com'
-            },
-            {
-                id: 'placeholder-2',
-                title: 'Black Jeans',
-                size: 'L',
-                itemType: 'Jeans',
-                pricePerDay: '3.50',
-                imageURL: 'https://via.placeholder.com/300x200?text=Black+Jeans',
-                condition: 'Good',
-                washInstructions: 'Machine wash cold, tumble dry low',
-                startDate: new Date(2023, 5, 1).toISOString(),
-                endDate: new Date(2023, 8, 30).toISOString(),
-                phone_number: '987-654-3210',
-                contact_email: 'placeholder2@example.com'
-            },
-            {
-                id: 'placeholder-3',
-                title: 'Summer Dress',
-                size: 'S',
-                itemType: 'Dress',
-                pricePerDay: '6.00',
-                imageURL: 'https://via.placeholder.com/300x200?text=Summer+Dress',
-                condition: 'New with tags',
-                washInstructions: 'Hand wash only',
-                startDate: new Date(2023, 5, 1).toISOString(),
-                endDate: new Date(2023, 8, 30).toISOString(),
-                phone_number: '555-123-4567',
-                contact_email: 'placeholder3@example.com'
-            }
-        ];
-
+        const placeholders = [/* ... your placeholder data ... */];
         return (
             <div className="listings-grid">
                 {placeholders.map((item) => (
@@ -166,7 +116,7 @@ function Dashboard({ name, email, onLogout }) {
             {/* Show Post Listing Form */}
             {showForm && <PostListingForm email={email} onClose={() => setShowForm(false)} />}
 
-            {/* Listings Grid */}
+            {/* Clothing Listings Grid */}
             {!showForm && (
                 <>
                     <h3>Clothing Listings</h3>
@@ -186,7 +136,7 @@ function Dashboard({ name, email, onLogout }) {
                                     onClick={() => handleListingClick(listing)}
                                 >
                                     <img
-                                        src={listing.imageURL || "another-vendor-flyer.jpg"}
+                                        src={listing.imageURL || "https://via.placeholder.com/300x200?text=No+Image"}
                                         alt={listing.title}
                                     />
                                     <div className="listing-info">
@@ -223,26 +173,19 @@ function Dashboard({ name, email, onLogout }) {
     const renderAboutContent = () => (
         <div className="about-section">
             <h2>About Campus Closet</h2>
-            <p>Campus Closet is dedicated to fostering a vibrant and sustainable clothing culture within the Atlanta University Center.
-                Through our platform for renting, buying, selling, and swapping items – from iconic Founders Day attire to everyday
-                wear and creative pieces – we aim to build community, empower students to express themselves,
-                and make fashion accessible for all.</p>
-            {/* Add your about us content here */}
+            <p className="mission-statement">
+                Our mission at Campus Closet is to empower the AUC community by providing a sustainable and accessible platform to rent, buy, sell, and swap clothing. We facilitate sharing for events like Founders Day, everyday needs, and creative expression, fostering community, saving resources, and celebrating individual style.
+            </p>
+            <p>Welcome to Campus Closet, your go-to clothing swap service within the Atlanta University Center. We're here to help you rent or buy those perfect Founders Day dresses and white attire for your siblings, give a new life to your prom dresses and suits through donation, find that unique Spelman merch for a photoshoot, or simply swap clothes with friends to build community and save a little money. Whether you're looking to buy, rent, sell, or even trade, Campus Closet offers a multitude of options to meet your clothing needs.</p>
+            {/* You can add more information about your company here */}
         </div>
     );
 
     const renderCommunityContent = () => (
         <div className="community-section">
             <h2>Community</h2>
-            <p>Here is a list of initiatives to provide gently worn or used clothing to AUC students and a list of secondhand vendors:</p>
-            <div className="vendor-listings-grid">
-                <div className="vendor-card">
-                    <img src={sistersClosetFlyer} alt="My Sister's Closet Flyer" />
-                    <a href="https://www.instagram.com/mysisterscloset/" target="_blank" rel="noopener noreferrer">
-                        Visit My Sister's Closet on Instagram
-                    </a>
-                </div>
-            </div>
+            <p>This is where you would build out community features or information.</p>
+            {/* Add your community content here */}
         </div>
     );
 
@@ -277,7 +220,7 @@ function Dashboard({ name, email, onLogout }) {
             {activeTab === 'about' && renderAboutContent()}
             {activeTab === 'community' && renderCommunityContent()}
 
-            {/* Logout Button (keep it at the bottom) */}
+            {/* Logout Button */}
             <button className="logout-btn" onClick={onLogout}>Log Out</button>
         </div>
     );
