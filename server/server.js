@@ -4,19 +4,36 @@ const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 const multer = require('multer');
 const { ApiError, Client, Environment } = require('square');
+
+
+
 const { randomUUID } = require('crypto');
 const cors = require('cors');
+
+// const nodemailer = require('nodemailer'); // For confirmation emails
 
 // Initialize Supabase client
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 // Initialize Square client
+
 const squareClient = new Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN,
   environment: process.env.NODE_ENV === 'production'
     ? Environment.Production
     : Environment.Sandbox
 });
+// Configure email transporter (if using)
+/*
+const transporter = nodemailer.createTransport({
+  // Configure based on your email provider
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
+  }
+});
+*/
 
 const app = express();
 app.use(express.json());
@@ -33,22 +50,82 @@ app.use(express.static(path.join(__dirname, '../client/build')));
 // Authentication Routes using Supabase Auth
 // ========================================================
 
+// Registration endpoint using Supabase Auth
 app.post('/register', async (req, res) => {
-    // ... your register route ...
+    const { name, email, password } = req.body;
+    console.log(`Received registration request for email: ${email}`);
+
+    // Email validation
+    const emailPattern = /@(spelman\.edu|morehouse\.edu)$/;
+    if (!emailPattern.test(email)) {
+        return res.status(400).json({ success: false, message: 'Email must end with @spelman.edu or @morehouse.edu.' });
+    }
+
+    try {
+        // Register user in Supabase Auth
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { name } } // Store additional user info
+        });
+
+        if (error) throw error;
+
+        res.json({ success: true, message: 'Registration successful. Check your email for verification.' });
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Error registering user' });
+    }
 });
 
+// Login endpoint
 app.post('/login', async (req, res) => {
-    // ... your login route ...
+    const { email, password } = req.body;
+    console.log(`Received login request for email: ${email}`);
+
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+
+        // Get the user's name from the user metadata
+        const name = data.user.user_metadata?.name || 'User';
+
+        res.json({ success: true, message: 'Login successful', name, user: data.user });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(401).json({ success: false, message: 'Invalid email or password' });
+    }
 });
 
+// Email verification using 6-digit code
 app.post('/verify', async (req, res) => {
-    // ... your verify route ...
+    const { email, verificationCode } = req.body;
+    console.log(`Verifying email: ${email} with code: ${verificationCode}`);
+
+    try {
+        const { data, error } = await supabase.auth.verifyOtp({
+            email,
+            token: verificationCode,
+            type: 'signup'
+        });
+
+        if (error) {
+            console.error('Verification failed:', error);
+            return res.status(400).json({ success: false, message: 'Invalid verification code.' });
+        }
+
+        res.json({ success: true, message: 'Email verified successfully' });
+    } catch (error) {
+        console.error('Verification error:', error);
+        res.status(500).json({ success: false, message: 'Error verifying email' });
+    }
 });
 
 // ========================================================
 // Clothing Listings API
 // ========================================================
 
+// Endpoint to post a new clothing listing
 app.post('/listings', upload.single('image'), async (req, res) => {
   const { title, size, itemType, condition, washInstructions, startDate, endDate, pricePerDay, totalPrice, phoneNumber, contactEmail } = req.body;
   const { file } = req;
@@ -65,8 +142,8 @@ app.post('/listings', upload.single('image'), async (req, res) => {
       endDate,
       pricePerDay,
       hasFile: !!file,
-      phoneNumber,
-      contactEmail
+      phoneNumber, // Log the received phone number
+      contactEmail // Log the received contact email
   });
 
   if (!userEmail) {
@@ -74,24 +151,53 @@ app.post('/listings', upload.single('image'), async (req, res) => {
   }
 
   try {
-      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
-      if (authError) throw authError;
+      // First, get the user UUID from the email
+      const { data: authData, error: authError } = await supabase.auth
+          .admin.listUsers();
+
+      if (authError) {
+          console.error("Error listing users:", authError);
+          throw authError;
+      }
+
+      // Find the user with the matching email
       const user = authData.users.find(u => u.email === userEmail);
-      if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+      if (!user) {
+          console.error("User not found with email:", userEmail);
+          return res.status(404).json({ success: false, message: 'User not found' });
+      }
+
       const userId = user.id;
+      console.log("Found user ID:", userId);
 
       let imageURL = null;
+
       if (file) {
           const fileName = `${Date.now()}_${file.originalname}`;
+          console.log("Uploading file:", fileName);
+
           const { data: fileData, error: fileError } = await supabase.storage
               .from('clothing-images')
-              .upload(fileName, file.buffer, { contentType: file.mimetype, upsert: true });
-          if (fileError) throw fileError;
+              .upload(fileName, file.buffer, {
+                  contentType: file.mimetype,
+                  upsert: true
+              });
+
+          if (fileError) {
+              console.error("File upload error:", fileError);
+              throw fileError;
+          }
+
           const { data: publicUrlData } = supabase.storage
               .from('clothing-images')
               .getPublicUrl(fileName);
+
           imageURL = publicUrlData.publicUrl;
+          console.log("File uploaded successfully, URL:", imageURL);
       }
+
+      console.log("Attempting insert with UUID:", userId);
 
       const { data, error } = await supabase
           .from('listings')
@@ -102,16 +208,21 @@ app.post('/listings', upload.single('image'), async (req, res) => {
               itemType,
               condition,
               washInstructions,
-              startDate,
-              endDate,
-              pricePerDay,
+              startDate, // Changed from dateAvailable
+              endDate,   // Added end date
+              pricePerDay, // Changed from price
               imageURL,
               phone_number: phoneNumber, // Include phone number
               contact_email: contactEmail // Include contact email
           }])
-          .select('id, user, title, size, itemType, condition, washInstructions, startDate, endDate, pricePerDay, imageURL, phone_number, contact_email'); // Select fields to return
+          .select();
 
-      if (error) throw error;
+      if (error) {
+          console.error("Supabase error details:", error);
+          throw error;
+      }
+
+      console.log("Insert successful, returned data:", data);
       res.json({ success: true, message: 'Listing posted successfully', listing: data[0] });
   } catch (error) {
       console.error("Full error object:", error);
@@ -127,7 +238,7 @@ app.get('/search', async (req, res) => {
   try {
       let dbQuery = supabase
           .from('listings')
-          .select('id, title, size, itemType, condition, washInstructions, startDate, endDate, pricePerDay, imageURL'); // Exclude phone_number and contact_email
+          .select('*');
 
       // Only add filter if query is not empty
       if (query.trim()) {
@@ -148,77 +259,6 @@ app.get('/search', async (req, res) => {
 // ========================================================
 // NEW: Rental and Payment API Endpoints
 // ========================================================
-
-/**
- * GET /api/rental-contact-info/:rentalId
- *
- * Endpoint to fetch the seller's contact information after a successful rental.
- * Requires authentication to ensure only the buyer who made the rental can access it.
- *
- * @route GET /api/rental-contact-info/:rentalId
- * @param {object} req - The Express request object.
- * @param {string} req.params.rentalId - The ID of the rental.
- * @param {string} req.headers.user-id - The email of the user making the request (for authentication).
- * @param {object} res - The Express response object.
- * @returns {object} JSON response containing the seller's phone number and email if the rental is confirmed.
- * - {boolean} success - Whether the contact information was fetched successfully.
- * - {string} [phone_number] - The seller's phone number.
- * - {string} [contact_email] - The seller's contact email.
- */
-app.get('/api/rental-contact-info/:rentalId', async (req, res) => {
-  const { rentalId } = req.params;
-  const userEmail = req.headers['user-id']; // Assuming you're using user-id for auth
-
-  if (!userEmail) {
-      return res.status(401).json({ success: false, message: 'Authentication required' });
-  }
-
-  try {
-      // Get user ID from email
-      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
-      if (authError) throw authError;
-
-      const user = authData.users.find(u => u.email === userEmail);
-      if (!user) {
-          return res.status(404).json({ success: false, message: 'User not found' });
-      }
-
-      const userId = user.id;
-
-      // Verify the user making the request is the renter and the rental is confirmed
-      const { data: rental, error: rentalError } = await supabase
-          .from('rentals')
-          .select('status, listing_id')
-          .eq('id', rentalId)
-          .eq('renter_id', userId)
-          .single();
-
-      if (rentalError || !rental) {
-          return res.status(404).json({ success: false, message: 'Rental not found or unauthorized' });
-      }
-
-      if (rental.status !== 'confirmed' && rental.status !== 'success') {
-          return res.status(403).json({ success: false, message: 'Contact information available after successful rental' });
-      }
-
-      // Get the listing details, including contact info
-      const { data: listing, error: listingError } = await supabase
-          .from('listings')
-          .select('phone_number, contact_email')
-          .eq('id', rental.listing_id)
-          .single();
-
-      if (listingError || !listing) {
-          return res.status(404).json({ success: false, message: 'Listing not found' });
-      }
-
-      res.json({ success: true, phone_number: listing.phone_number, contact_email: listing.contact_email });
-
-  } catch (error) {
-      console.error('Error fetching contact info:', error);
-      res.status(500).json({ success: false, message: 'Error fetching contact information' });
-  }
-});
 
 // Process payment and create rental record
 app.post('/api/process-payment', async (req, res) => {
@@ -299,6 +339,18 @@ app.post('/api/process-payment', async (req, res) => {
 
       const rentalId = rentalData[0].id;
 
+      // Optional: Send confirmation email
+      /*
+      await sendConfirmationEmail(
+        userEmail,
+        listingData,
+        new Date(startDate),
+        new Date(endDate),
+        amount,
+        rentalId
+      );
+      */
+
       return res.json({
         success: true,
         paymentId: payment.result.payment.id,
@@ -363,6 +415,50 @@ app.get('/api/rentals', async (req, res) => {
     res.status(500).json({ success: false, message: error.message || 'Error fetching rental history' });
   }
 });
+
+// Helper function to send confirmation email
+async function sendConfirmationEmail(email, listing, startDate, endDate, amount, rentalId) {
+  try {
+    const formattedStartDate = startDate.toLocaleDateString();
+    const formattedEndDate = endDate.toLocaleDateString();
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Rental Confirmation - Campus Closet',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Your Rental is Confirmed!</h2>
+          <p>Thank you for using Campus Closet. Your rental has been successfully processed.</p>
+
+          <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #2c3e50;">Rental Details</h3>
+            <p><strong>Item:</strong> ${listing.title}</p>
+            <p><strong>Size:</strong> ${listing.size}</p>
+            <p><strong>Rental Period:</strong> ${formattedStartDate} to ${formattedEndDate}</p>
+            <p><strong>Total Amount:</strong> $${parseFloat(amount).toFixed(2)}</p>
+            <p><strong>Confirmation ID:</strong> ${rentalId}</p>
+          </div>
+
+          <p>You'll be able to pick up your item on the start date of your rental period.</p>
+          <p>If you have any questions, please contact us at support@campuscloset.com.</p>
+
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666;">
+            <p>This is an automated email. Please do not reply to this message.</p>
+          </div>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`Confirmation email sent to ${email}`);
+    return true;
+  } catch (error) {
+    console.error('Error sending confirmation email:', error);
+    // Don't fail the transaction if email sending fails
+    return false;
+  }
+}
 
 // ========================================================
 // Serve React Frontend

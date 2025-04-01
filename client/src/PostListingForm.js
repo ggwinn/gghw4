@@ -7,69 +7,32 @@ import './Dashboard.css'; // Reusing Dashboard styles
 /**
  * PostListingForm Component
  *
- * This component provides a form for users to create and submit a new listing
- * for a clothing item. It handles input collection for item details,
- * image upload, and submission to the backend API, including fields for
- * phone number and contact email.
+ * This component provides a form for users to create and submit new clothing listings.
+ * It includes fields for item details, availability, pricing, and image upload.
  *
- * @component
- * @param {string} email - The email of the currently logged-in user (used for authentication and default contact email).
- * @param {function} onClose - A function to call to close the form after successful submission or cancellation.
- * @returns {JSX.Element} The PostListingForm component.
+ * @param {object} props
+ * @param {string} props.email - The email of the logged-in user, used to associate the listing with the user.
+ * @param {function} props.onClose - A function to close the form after a listing is posted or if the user cancels.
  */
 function PostListingForm({ email, onClose }) {
+    // State variables to manage form inputs and submission status
     const [title, setTitle] = useState('');
-    /** @type {string} The title of the clothing item being listed. */
-
     const [size, setSize] = useState('S');
-    /** @type {string} The size of the clothing item, selected from a dropdown. */
-
     const [itemType, setItemType] = useState('jeans');
-    /** @type {string} The type of clothing item, selected from a dropdown. */
-
     const [condition, setCondition] = useState('');
-    /** @type {string} The condition of the clothing item, selected from a dropdown. */
-
     const [washInstructions, setWashInstructions] = useState('');
-    /** @type {string} Specific wash instructions for the item. */
-
     const [startDate, setStartDate] = useState(null);
-    /** @type {Date | null} The date the item becomes available for rent. */
-
     const [endDate, setEndDate] = useState(null);
-    /** @type {Date | null} The date the item is no longer available for rent. */
-
     const [pricePerDay, setPricePerDay] = useState('');
-    /** @type {string} The price per day for renting the item. */
-
     const [totalPrice, setTotalPrice] = useState(0);
-    /** @type {number} The calculated total price based on the selected rental period. */
-
     const [image, setImage] = useState(null);
-    /** @type {File | null} The image file selected by the user. */
-
     const [message, setMessage] = useState('');
-    /** @type {string} A message to display to the user (success or error). */
-
     const [isSubmitting, setIsSubmitting] = useState(false);
-    /** @type {boolean} Indicates whether the form is currently being submitted. */
-
     const [previewUrl, setPreviewUrl] = useState('');
-    /** @type {string} A URL for displaying a preview of the selected image. */
-
+    // New state for phone number input
     const [phoneNumber, setPhoneNumber] = useState('');
-    /** @type {string} The phone number of the user posting the listing. */
 
-    const [contactEmail, setContactEmail] = useState(email);
-    /** @type {string} The contact email of the user posting the listing (defaults to the logged-in user's email). */
-
-    /**
-     * Calculates the total price when the start date, end date, or price per day changes.
-     * @effect
-     * @dependency {startDate}
-     * @dependency {endDate}
-     * @dependency {pricePerDay}
-     */
+    // Calculate total price when relevant inputs change
     useEffect(() => {
         if (startDate && endDate && pricePerDay) {
             const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
@@ -77,13 +40,9 @@ function PostListingForm({ email, onClose }) {
         } else {
             setTotalPrice(0);
         }
-    }, [startDate, endDate, pricePerDay]);
+    }, [startDate, endDate, pricePerDay]); // Recalculate when dates or price change
 
-    /**
-     * Resets the message after a short delay.
-     * @effect
-     * @dependency {message}
-     */
+    // Reset message after 5 seconds
     useEffect(() => {
         if (message) {
             const timer = setTimeout(() => {
@@ -91,13 +50,9 @@ function PostListingForm({ email, onClose }) {
             }, 5000);
             return () => clearTimeout(timer);
         }
-    }, [message]);
+    }, [message]); // Clear message after a delay
 
-    /**
-     * Generates a preview URL for the selected image.
-     * @effect
-     * @dependency {image}
-     */
+    // Generate image preview when file is selected
     useEffect(() => {
         if (image) {
             const reader = new FileReader();
@@ -108,18 +63,16 @@ function PostListingForm({ email, onClose }) {
         } else {
             setPreviewUrl('');
         }
-    }, [image]);
+    }, [image]); // Update image preview
 
     /**
-     * Handles the form submission to post a new listing.
-     * It prevents the default form submission, sets the submitting state,
-     * validates required fields, prepares form data, and sends the data
-     * to the backend API endpoint, including phone number and contact email.
+     * handlePostListing
      *
-     * @async
-     * @function handlePostListing
-     * @param {React.FormEvent} e - The form submit event.
-     * @returns {Promise<void>}
+     * Handles the submission of the listing form. It gathers the form data,
+     * including the image, and sends it to the server via an API call.
+     * It also manages the loading state and displays success or error messages.
+     *
+     * @param {Event} e - The form submit event.
      */
     const handlePostListing = async (e) => {
         e.preventDefault();
@@ -145,12 +98,6 @@ function PostListingForm({ email, onClose }) {
             return;
         }
 
-        if (!phoneNumber) {
-            setMessage('Please enter your phone number');
-            setIsSubmitting(false);
-            return;
-        }
-
         const formData = new FormData();
         formData.append('title', title);
         formData.append('size', size);
@@ -162,15 +109,15 @@ function PostListingForm({ email, onClose }) {
         formData.append('pricePerDay', pricePerDay);
         formData.append('totalPrice', totalPrice);
         if (image) formData.append('image', image);
+        // Append the phone number to the form data
         formData.append('phoneNumber', phoneNumber);
-        formData.append('contactEmail', contactEmail);
 
         try {
             await axios.post('/listings', formData, {
                 headers: { 'Content-Type': 'multipart/form-data', 'user-id': email }
             });
             setMessage('✅ Listing posted successfully!');
-            // Reset form after successful submission, including phone number and contact email
+            // Reset form including phone number
             setTitle('');
             setCondition('');
             setWashInstructions('');
@@ -181,9 +128,8 @@ function PostListingForm({ email, onClose }) {
             setImage(null);
             setPreviewUrl('');
             setPhoneNumber('');
-            setContactEmail(email);
 
-            // Close form after a short delay to show success message.
+            // Close form after delay
             setTimeout(() => {
                 onClose();
             }, 1500);
@@ -309,23 +255,14 @@ function PostListingForm({ email, onClose }) {
                     )}
                 </div>
 
+                {/* New input field for phone number */}
                 <label>Phone Number</label>
                 <input
                     type="tel"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     placeholder="Enter your phone number"
-                    required
-                />
-
-                <label>Contact Email</label>
-                <input
-                    type="email"
-                    value={contactEmail}
-                    onChange={(e) => setContactEmail(e.target.value)}
-                    placeholder="Enter your contact email"
-                    required
-                    readOnly // Set to readOnly, assuming you want to use the logged-in user's email
+                    required // Consider if this should be required
                 />
 
                 <button
