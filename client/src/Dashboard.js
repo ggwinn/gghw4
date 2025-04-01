@@ -2,23 +2,15 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import PostListingForm from './PostListingForm';
 import ListingDetailModal from './ListingDetailModal';
-import './Dashboard.css'; // Reusing Dashboard styles
-import './NavigationBar.css'; // New CSS file for navigation bar
+import './Dashboard.css';
+import './NavigationBar.css';
 
-/**
- * Dashboard Component
- *
- * This component renders the main dashboard for logged-in users, now with navigation tabs.
- * It displays a search bar, a button to toggle the post listing form,
- * a grid of available listings, and handles the display of listing details in a modal.
- * It also includes tabs for 'About' and 'Community'.
- *
- * @component
- * @param {string} name - The name of the logged-in user.
- * @param {string} email - The email of the logged-in user.
- * @param {function} onLogout - A function to call when the user logs out.
- * @returns {JSX.Element} The Dashboard component.
- */
+// Import flyer images
+import sistersClosetFlyer from './images/sisters-closet-flyer.jpg';
+import breakingCycleFlyer from './images/breaking-cycle-flyer.jpg';
+import stylingsoflyFlyer from './images/stylingsofly-flyer.jpg';
+import anotherVendorFlyer from './images/another-vendor-flyer.jpg'; // Example of a new vendor image
+
 function Dashboard({ name, email, onLogout }) {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [showForm, setShowForm] = useState(false);
@@ -177,6 +169,7 @@ function Dashboard({ name, email, onLogout }) {
             {/* Listings Grid */}
             {!showForm && (
                 <>
+                    <h3>Clothing Listings</h3>
                     {isLoading ? (
                         <p className="status-message">Loading listings...</p>
                     ) : error ? (
@@ -230,10 +223,10 @@ function Dashboard({ name, email, onLogout }) {
     const renderAboutContent = () => (
         <div className="about-section">
             <h2>About Campus Closet</h2>
-            <p>Campus Closet is dedicated to fostering a vibrant and sustainable clothing culture within the Atlanta University Center. 
-                Through our platform for renting, buying, selling, and swapping items – from iconic Founders Day attire to everyday 
-                wear and creative pieces – we aim to build community, empower students to express themselves, 
-                and make fashion accessible for all..</p>
+            <p>Campus Closet is dedicated to fostering a vibrant and sustainable clothing culture within the Atlanta University Center.
+                Through our platform for renting, buying, selling, and swapping items – from iconic Founders Day attire to everyday
+                wear and creative pieces – we aim to build community, empower students to express themselves,
+                and make fashion accessible for all.</p>
             {/* Add your about us content here */}
         </div>
     );
@@ -241,8 +234,34 @@ function Dashboard({ name, email, onLogout }) {
     const renderCommunityContent = () => (
         <div className="community-section">
             <h2>Community</h2>
-            <p>Here is a list of initiaives to provide gently worn or used clothing to AUC students and a list of secondhand vendors.</p>
-            {/* Add your community content here */}
+            <p>Here is a list of initiatives to provide gently worn or used clothing to AUC students and a list of secondhand vendors:</p>
+            <div className="vendor-listings-grid">
+                <div className="vendor-card">
+                    <img src={sistersClosetFlyer} alt="My Sister's Closet Flyer" />
+                    <a href="https://www.instagram.com/mysisterscloset/" target="_blank" rel="noopener noreferrer">
+                        Visit My Sister's Closet on Instagram
+                    </a>
+                </div>
+                <div className="vendor-card">
+                    <img src={breakingCycleFlyer} alt="Breaking the Cycle Global Flyer" />
+                    <a href="https://www.instagram.com/breakingthecycleglobal/" target="_blank" rel="noopener noreferrer">
+                        Visit Breaking the Cycle Global on Instagram
+                    </a>
+                </div>
+                <div className="vendor-card">
+                    <img src={stylingsoflyFlyer} alt="Stylingsoflylikeag6 Flyer" />
+                    <a href="https://www.instagram.com/stylingsoflylikeag6/" target="_blank" rel="noopener noreferrer">
+                        Visit Stylingsoflylikeag6 on Instagram
+                    </a>
+                </div>
+                {/* Example of adding another vendor */}
+                <div className="vendor-card">
+                    <img src={anotherVendorFlyer} alt="Another Great Vendor Flyer" />
+                    <a href="https://www.instagram.com/anothergreatvendor/" target="_blank" rel="noopener noreferrer">
+                        Visit Another Great Vendor on Instagram
+                    </a>
+                </div>
+            </div>
         </div>
     );
 
