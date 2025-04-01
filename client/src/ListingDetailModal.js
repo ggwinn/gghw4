@@ -14,14 +14,15 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
   const [cardButtonRendered, setCardButtonRendered] = useState(false);
   const [pickupLocation, setPickupLocation] = useState('');
   const [dropoffLocation, setDropoffLocation] = useState('');
+  const [contactInfo, setContactInfo] = useState(null); // State to store contact info
 
-  // Calculate available date range (from listing's startDate to endDate)
+  // Calculate available date range
   const availableStartDate = new Date(listing.startDate);
   const availableEndDate = new Date(listing.endDate);
   const appId = process.env.REACT_APP_SQUARE_APP_ID;
   const locationId = process.env.REACT_APP_SQUARE_LOCATION_ID;
 
-  // Calculate total price when dates change
+  // Calculate total price
   useEffect(() => {
     if (startDate && endDate) {
       const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
@@ -67,7 +68,7 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
   const handlePayment = async (event) => {
     event.preventDefault();
 
-    // Update the validation to include pickup and dropoff locations
+    // Validate rental details
     if (!startDate || !endDate || !pickupLocation || !dropoffLocation) {
       setErrorMessage('Please select rental dates and specify pickup/drop-off locations.');
       return;
@@ -77,7 +78,7 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
     setErrorMessage('');
 
     try {
-      // Get a payment token from Square
+      // Get payment token from Square
       let result;
       try {
         result = await squarePaymentForm.tokenize();
@@ -90,7 +91,7 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
         return;
       }
 
-      // Send the payment token to your server
+      // Send payment token to server
       const response = await axios.post('/api/process-payment', {
         sourceId: result.token,
         amount: totalPrice,
@@ -98,12 +99,33 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         userEmail: userEmail,
-        pickupLocation: pickupLocation, // Add pickup location to the request
-        dropoffLocation: dropoffLocation // Add drop-off location to the request
+        pickupLocation: pickupLocation,
+        dropoffLocation: dropoffLocation
       });
 
       if (response.data.success) {
         setPaymentStatus('success');
+
+        // Fetch contact information after successful payment
+        try {
+          const contactResponse = await axios.get(
+            `/api/rental-contact-info/${response.data.rentalId}`,
+            {
+              headers: {
+                'user-id': userEmail,
+              },
+            }
+          );
+          if (contactResponse.data.success) {
+            setContactInfo(contactResponse.data);
+          } else {
+            console.error('Error fetching contact info:', contactResponse.data.message);
+            // Handle error if fetching contact info fails
+          }
+        } catch (error) {
+          console.error('Error fetching contact info:', error);
+          // Handle error if fetching contact info fails
+        }
       } else {
         setPaymentStatus('error');
         setErrorMessage(response.data.message || 'Payment processing failed');
@@ -140,14 +162,12 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
               <p>From {availableStartDate.toLocaleDateString()} to {availableEndDate.toLocaleDateString()}</p>
             </div>
 
-            {/* Conditionally render the contact info section */}
-            {paymentStatus === 'success' && (
+            {/* Conditionally render contact info after successful payment */}
+            {paymentStatus === 'success' && contactInfo && (
               <div className="contact-info">
                 <h3>Seller Contact Information</h3>
-                {/* Display the phone number from the listing data */}
-                <p><strong>Phone:</strong> {listing.phone_number}</p>
-                {/* Display the contact email from the listing data */}
-                <p><strong>Email:</strong> {listing.contact_email}</p>
+                <p><strong>Phone:</strong> {contactInfo.phone_number}</p>
+                <p><strong>Email:</strong> {contactInfo.contact_email}</p>
               </div>
             )}
 
@@ -186,7 +206,8 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
                     />
                   </div>
                 </div>
-                {/* Pickup and drop off location*/}
+
+                {/* Pickup and drop off location */}
                 <div>
                   <label htmlFor="pickupLocation">Pickup Location:</label>
                   <input
