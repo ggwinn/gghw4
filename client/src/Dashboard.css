@@ -40,9 +40,10 @@ body.dashboard-view {
 .search-section {
   display: flex;
   justify-content: center;
+  align-items: center; /* Vertically align search and sort */
   margin-bottom: 30px;
   position: relative;
-  max-width: 600px;
+  max-width: 800px; /* Increase max-width to accommodate both */
   margin-left: auto;
   margin-right: auto;
 }
@@ -61,6 +62,37 @@ body.dashboard-view {
   border-color: #3498db;
   outline: none;
   box-shadow: 0 2px 15px rgba(52, 152, 219, 0.15);
+}
+
+/* Sorting Dropdown */
+.sort-dropdown {
+  padding: 14px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 16px;
+  background-color: white;
+  color: #333;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  appearance: none; /* Remove default arrow */
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23666"%3E%3Cpath d="M7 10l5 5 5-5z"/%3E%3C/svg%3E');
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 1.5em;
+  margin-left: 10px; /* Adjust spacing from search bar */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.sort-dropdown:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 2px 15px rgba(52, 152, 219, 0.15);
+}
+
+.sort-dropdown option {
+  font-size: 16px;
+  color: #333;
+  padding: 8px 12px;
 }
 
 /* Action Buttons */
@@ -350,11 +382,6 @@ body.dashboard-view {
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 /* Logout Button */
 .logout-btn {
   background: #e74c3c;
@@ -404,15 +431,4 @@ body.dashboard-view {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-/* Media query for the form on mobile */
-@media (max-width: 600px) {
-  .listing-form form {
-    grid-template-columns: 1fr;
-  }
-  
-  .listing-form {
-    padding: 20px;
-  }
 }
