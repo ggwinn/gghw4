@@ -5,6 +5,8 @@ import ListingDetailModal from './ListingDetailModal';
 import './Dashboard.css';
 import './NavigationBar.css';
 
+import sistersClosetFlyer from './images/sisters-closet-flyer.jpg'; // Add this line
+
 function Dashboard({ name, email, onLogout }) {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [showForm, setShowForm] = useState(false);
@@ -176,7 +178,6 @@ function Dashboard({ name, email, onLogout }) {
             <p className="mission-statement">
                 Our mission at Campus Closet is to empower the AUC community by providing a sustainable and accessible platform to rent, buy, sell, and swap clothing. We facilitate sharing for events like Founders Day, everyday needs, and creative expression, fostering community, saving resources, and celebrating individual style.
             </p>
-            <p>Welcome to Campus Closet, your go-to clothing swap service within the Atlanta University Center. We're here to help you rent or buy those perfect Founders Day dresses and white attire for your siblings, give a new life to your prom dresses and suits through donation, find that unique Spelman merch for a photoshoot, or simply swap clothes with friends to build community and save a little money. Whether you're looking to buy, rent, sell, or even trade, Campus Closet offers a multitude of options to meet your clothing needs.</p>
             {/* You can add more information about your company here */}
         </div>
     );
@@ -184,8 +185,17 @@ function Dashboard({ name, email, onLogout }) {
     const renderCommunityContent = () => (
         <div className="community-section">
             <h2>Community</h2>
-            <p>This is where you would build out community features or information.</p>
-            {/* Add your community content here */}
+            <p>This is our page of to highlight AUC clothing initiatives and vendors</p>
+    
+            {/* First Vendor: My Sister's Closet */}
+            <div className="vendor-card">
+                <img src={sistersClosetFlyer} alt="My Sister's Closet Flyer" />
+                <a href="https://spelmancollegesga.weebly.com/my-sisters-closet.html" target="_blank" rel="noopener noreferrer">
+                    Visit My Sister's Closet on Instagram
+                </a>
+            </div>
+    
+            {/* You can add more community content or vendor listings here */}
         </div>
     );
 
