@@ -186,7 +186,7 @@ function Dashboard({ name, email, onLogout }) {
                                     onClick={() => handleListingClick(listing)}
                                 >
                                     <img
-                                        src={listing.imageURL || "https://via.placeholder.com/300x200?text=No+Image"}
+                                        src={listing.imageURL || "another-vendor-flyer.jpg"}
                                         alt={listing.title}
                                     />
                                     <div className="listing-info">
