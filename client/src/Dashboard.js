@@ -5,7 +5,7 @@ import ListingDetailModal from './ListingDetailModal';
 import './Dashboard.css';
 import './NavigationBar.css';
 
-import sistersClosetFlyer from './images/sisters-closet-flyer.jpg'; // Add this line
+import sistersClosetFlyer from '../public/images/sisters-closet-flyer.jpg'; // Add this line
 
 function Dashboard({ name, email, onLogout }) {
     const [activeTab, setActiveTab] = useState('dashboard');
