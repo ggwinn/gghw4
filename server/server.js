@@ -43,7 +43,7 @@ app.post('/verify', async (req, res) => { /* ... your verification code ... */ }
 
 // Endpoint to post a new clothing listing
 app.post('/listings', upload.single('image'), async (req, res) => {
-  const { title, size, itemType, condition, washInstructions, startDate, endDate, pricePerDay, totalPrice, phoneNumber, contactEmail, rentalType } = req.body;
+  const { title, size, itemType, condition, washInstructions, startDate, endDate, pricePerDay, totalPrice, phoneNumber, contactEmail } = req.body;
   const { file } = req;
   const userEmail = req.headers['user-id'];
 
@@ -56,7 +56,6 @@ app.post('/listings', upload.single('image'), async (req, res) => {
     washInstructions,
     startDate,
     endDate,
-    rentalType,
     pricePerDay,
     totalPrice,
     hasFile: !!file,
@@ -125,8 +124,7 @@ app.post('/listings', upload.single('image'), async (req, res) => {
         washInstructions,
         startDate,
         endDate,
-        rental_type: rentalType, // Store rental type
-        pricePerDay: rentalType === 'rent' ? parseFloat(pricePerDay) : null, // Store price if rent, otherwise null
+        pricePerDay: parseFloat(pricePerDay),
         imageURL,
         phone_number: phoneNumber,
         contact_email: contactEmail,
@@ -200,27 +198,15 @@ app.post('/api/process-payment', async (req, res) => {
 
     const userId = user.id;
 
-    // Get listing details to check if it's a paid rental
-    const { data: listingData, error: listingError } = await supabase
-      .from('listings')
-      .select('rental_type')
-      .eq('id', listingId)
-      .single();
-
-    if (listingError) throw listingError;
-    if (!listingData || listingData.rental_type !== 'rent') { // Ensure rental_type is 'rent'
-      return res.status(400).json({ success: false, message: 'Payment is not required for this listing.' });
-    }
-
     // Get listing details
-    const { data: fullListingData, error: fullListingError } = await supabase
+    const { data: listingData, error: listingError } = await supabase
       .from('listings')
       .select('*')
       .eq('id', listingId)
       .single();
 
-    if (fullListingError) throw fullListingError;
-    if (!fullListingData) {
+    if (listingError) throw listingError;
+    if (!listingData) {
       return res.status(404).json({ success: false, message: 'Listing not found' });
     }
 
@@ -239,7 +225,7 @@ app.post('/api/process-payment', async (req, res) => {
         currency: 'USD'
       },
       // Add metadata about the transaction
-      note: `Rental payment for ${fullListingData.title}`,
+      note: `Rental payment for ${listingData.title}`,
       // Include reference ID for your database
       referenceId: String(listingId)
     });
@@ -267,7 +253,7 @@ app.post('/api/process-payment', async (req, res) => {
       const rentalId = rentalData[0].id;
 
       // Optional: Send confirmation email
-      // await sendConfirmationEmail(userEmail, fullListingData, new Date(startDate), new Date(endDate), amount, rentalId);
+      // await sendConfirmationEmail(userEmail, listingData, new Date(startDate), new Date(endDate), amount, rentalId);
 
       return res.json({
         success: true,
@@ -319,8 +305,7 @@ app.get('/api/rentals', async (req, res) => {
           size,
           itemType,
           imageURL,
-          pricePerDay,
-          rental_type
+          pricePerDay
         )
       `)
       .eq('renter_id', userId)
