@@ -1,320 +1,188 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import './Dashboard.css'; // Reusing Dashboard styles
+import './PostListingForm.css';
 
-/**
- * PostListingForm Component
- *
- * This component provides a form for users to create and submit new clothing listings.
- * It includes fields for item details, availability, pricing (optional), and image upload.
- *
- * @param {object} props
- * @param {string} props.email - The email of the logged-in user, used to associate the listing with the user.
- * @param {function} props.onClose - A function to close the form after a listing is posted or if the user cancels.
- */
 function PostListingForm({ email, onClose }) {
-    // State variables to manage form inputs and submission status
-    const [title, setTitle] = useState('');
-    const [size, setSize] = useState('S');
-    const [itemType, setItemType] = useState('jeans');
-    const [condition, setCondition] = useState('');
-    const [washInstructions, setWashInstructions] = useState('');
-    const [startDate, setStartDate] = useState(null);
-    const [endDate, setEndDate] = useState(null);
-    const [rentalType, setRentalType] = useState('rent'); // Default to 'rent'
-    const [pricePerDay, setPricePerDay] = useState('');
-    const [totalPrice, setTotalPrice] = useState(0);
-    const [image, setImage] = useState(null);
-    const [message, setMessage] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [previewUrl, setPreviewUrl] = useState('');
-    const [phoneNumber, setPhoneNumber] = useState('');
+  const [title, setTitle] = useState('');
+  const [size, setSize] = useState('');
+  const [itemType, setItemType] = useState('');
+  const [condition, setCondition] = useState('');
+  const [washInstructions, setWashInstructions] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [pricePerDay, setPricePerDay] = useState('');
+  const [totalPrice, setTotalPrice] = useState(0);
+  const [image, setImage] = useState(null);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [contactEmail, setContactEmail] = useState(email || '');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState('');
+  const [postSuccess, setPostSuccess] = useState(false);
 
-    // Calculate total price when relevant inputs change and rentalType is 'rent'
-    useEffect(() => {
-        if (rentalType === 'rent' && startDate && endDate && pricePerDay) {
-            const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-            setTotalPrice(days * parseFloat(pricePerDay));
-        } else {
-            setTotalPrice(0);
-        }
-    }, [startDate, endDate, pricePerDay, rentalType]);
+  const handleStartDateChange = (e) => {
+    setStartDate(e.target.value);
+    calculateTotalPrice(e.target.value, endDate, pricePerDay);
+  };
 
-    // Reset message after 5 seconds
-    useEffect(() => {
-        if (message) {
-            const timer = setTimeout(() => {
-                setMessage('');
-            }, 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [message]);
+  const handleEndDateChange = (e) => {
+    setEndDate(e.target.value);
+    calculateTotalPrice(startDate, e.target.value, pricePerDay);
+  };
 
-    // Generate image preview when file is selected
-    useEffect(() => {
-        if (image) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPreviewUrl(reader.result);
-            };
-            reader.readAsDataURL(image);
-        } else {
-            setPreviewUrl('');
-        }
-    }, [image]);
+  const handlePricePerDayChange = (e) => {
+    const price = e.target.value;
+    setPricePerDay(price);
+    calculateTotalPrice(startDate, endDate, price);
+  };
 
-    /**
-     * handlePostListing
-     *
-     * Handles the submission of the listing form. It gathers the form data,
-     * including the image and rental type, and sends it to the server via an API call.
-     * It also manages the loading state and displays success or error messages.
-     *
-     * @param {Event} e - The form submit event.
-     */
-    const handlePostListing = async (e) => {
-        e.preventDefault();
-        setIsSubmitting(true);
-        setMessage('');
+  const calculateTotalPrice = (start, end, price) => {
+    if (start && end && price) {
+      const startDateObj = new Date(start);
+      const endDateObj = new Date(end);
+      const timeDiff = Math.abs(endDateObj.getTime() - startDateObj.getTime());
+      const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+      setTotalPrice(days * parseFloat(price));
+    } else {
+      setTotalPrice(0);
+    }
+  };
 
-        if (!startDate || !endDate) {
-            setMessage('Please select both start and end dates');
-            setIsSubmitting(false);
-            return;
-        }
+  const handleImageChange = (e) => {
+    setImage(e.target.files[0]);
+  };
 
-        if (!image) {
-            setMessage('Please upload an image of your item');
-            setIsSubmitting(false);
-            return;
-        }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setUploadProgress(0);
+    setUploadError('');
+    setPostSuccess(false);
 
-        if (rentalType === 'rent' && (!pricePerDay || isNaN(parseFloat(pricePerDay)) || parseFloat(pricePerDay) <= 0)) {
-            setMessage('Please enter a valid price per day');
-            setIsSubmitting(false);
-            return;
-        }
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('size', size);
+    formData.append('itemType', itemType);
+    formData.append('condition', condition);
+    formData.append('washInstructions', washInstructions);
+    formData.append('startDate', startDate);
+    formData.append('endDate', endDate);
+    formData.append('pricePerDay', pricePerDay);
+    formData.append('totalPrice', totalPrice);
+    formData.append('phoneNumber', phoneNumber);
+    formData.append('contactEmail', contactEmail);
+    if (image) {
+      formData.append('image', image);
+    }
 
-        const formData = new FormData();
-        formData.append('title', title);
-        formData.append('size', size);
-        formData.append('itemType', itemType);
-        formData.append('condition', condition);
-        formData.append('washInstructions', washInstructions);
-        formData.append('startDate', startDate.toISOString());
-        formData.append('endDate', endDate.toISOString());
-        formData.append('rentalType', rentalType); // Send rental type to backend
-        if (rentalType === 'rent') {
-            formData.append('pricePerDay', pricePerDay);
-            formData.append('totalPrice', totalPrice);
-        }
-        if (image) formData.append('image', image);
-        formData.append('phoneNumber', phoneNumber);
+    try {
+      const response = await axios.post('/listings', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'user-id': email,
+        },
+        onUploadProgress: (progressEvent) => {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(progress);
+        },
+      });
 
-        try {
-            await axios.post('/listings', formData, {
-                headers: { 'Content-Type': 'multipart/form-data', 'user-id': email }
-            });
-            setMessage('✅ Listing posted successfully!');
-            // Reset form including rentalType
-            setTitle('');
-            setCondition('');
-            setWashInstructions('');
-            setStartDate(null);
-            setEndDate(null);
-            setPricePerDay('');
-            setTotalPrice(0);
-            setImage(null);
-            setPreviewUrl('');
-            setPhoneNumber('');
-            setRentalType('rent'); // Reset to default
+      console.log('Listing posted successfully:', response.data);
+      setPostSuccess(true);
+      // Reset form fields after successful submission
+      setTitle('');
+      setSize('');
+      setItemType('');
+      setCondition('');
+      setWashInstructions('');
+      setStartDate('');
+      setEndDate('');
+      setPricePerDay('');
+      setTotalPrice(0);
+      setImage(null);
+      setPhoneNumber('');
+      setContactEmail(email || '');
+      setUploadProgress(0);
+      setUploadError('');
 
-            setTimeout(() => {
-                onClose();
-            }, 1500);
-        } catch (error) {
-            setMessage('❌ Error posting listing: ' + (error.response?.data?.message || error.message));
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+      // Optionally close the form after a delay
+      setTimeout(onClose, 1500);
 
-    return (
-        <div className="listing-form">
-            <h3>Post a Clothing Listing</h3>
+    } catch (error) {
+      console.error('Error posting listing:', error);
+      setUploadError('Failed to upload listing. Please try again.');
+      // Optionally display a more user-friendly error message
+    }
+  };
 
-            <form onSubmit={handlePostListing}>
-                <label>Title</label>
-                <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="E.g., Black Formal Dress"
-                    required
-                />
-
-                <label>Size</label>
-                <select value={size} onChange={(e) => setSize(e.target.value)}>
-                    <option value="XS">XS</option>
-                    <option value="S">S</option>
-                    <option value="M">M</option>
-                    <option value="L">L</option>
-                    <option value="XL">XL</option>
-                    <option value="XXL">XXL</option>
-                </select>
-
-                <label>Item Type</label>
-                <select value={itemType} onChange={(e) => setItemType(e.target.value)}>
-                    <option value="jeans">Jeans</option>
-                    <option value="dress">Dress</option>
-                    <option value="skirt">Skirt</option>
-                    <option value="pants">Pants</option>
-                    <option value="sweater">Sweater</option>
-                    <option value="shirt">Shirt</option>
-                    <option value="jacket">Jacket</option>
-                    <option value="blazer">Blazer</option>
-                    <option value="formal">Formal Wear</option>
-                    <option value="accessories">Accessories</option>
-                    <option value="other">Other</option>
-                </select>
-
-                <label>Condition</label>
-                <select value={condition} onChange={(e) => setCondition(e.target.value)} required>
-                    <option value="">Select condition...</option>
-                    <option value="New with tags">New with tags</option>
-                    <option value="Like new">Like new</option>
-                    <option value="Good">Good</option>
-                    <option value="Fair">Fair</option>
-                </select>
-
-                <label>Wash Instructions</label>
-                <input
-                    type="text"
-                    value={washInstructions}
-                    onChange={(e) => setWashInstructions(e.target.value)}
-                    placeholder="E.g., Machine wash cold"
-                    required
-                />
-
-                <label>Available From</label>
-                <DatePicker
-                    selected={startDate}
-                    onChange={(date) => setStartDate(date)}
-                    selectsStart
-                    startDate={startDate}
-                    endDate={endDate}
-                    minDate={new Date()}
-                    placeholderText="Select start date"
-                    className="date-input"
-                />
-
-                <label>Available Until</label>
-                <DatePicker
-                    selected={endDate}
-                    onChange={(date) => setEndDate(date)}
-                    selectsEnd
-                    startDate={startDate}
-                    endDate={endDate}
-                    minDate={startDate || new Date()}
-                    placeholderText="Select end date"
-                    className="date-input"
-                />
-
-                <label>Rental Type</label>
-                <div>
-                    <input
-                        type="radio"
-                        id="rent"
-                        name="rentalType"
-                        value="rent"
-                        checked={rentalType === 'rent'}
-                        onChange={(e) => setRentalType(e.target.value)}
-                    />
-                    <label htmlFor="rent">Rent</label>
-
-                    <input
-                        type="radio"
-                        id="free"
-                        name="rentalType"
-                        value="free"
-                        checked={rentalType === 'free'}
-                        onChange={(e) => setRentalType(e.target.value)}
-                    />
-                    <label htmlFor="free">Free</label>
-                </div>
-
-                {rentalType === 'rent' && (
-                    <>
-                        <label>Price per day ($)</label>
-                        <input
-                            type="number"
-                            value={pricePerDay}
-                            onChange={(e) => setPricePerDay(e.target.value)}
-                            min="0.01"
-                            step="0.01"
-                            placeholder="E.g., 4.99"
-                            required
-                        />
-                        {totalPrice > 0 && (
-                            <p className="total-price">
-                                Total Price for {Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1} days:
-                                <span>${totalPrice.toFixed(2)}</span>
-                            </p>
-                        )}
-                    </>
-                )}
-
-                {rentalType === 'free' && (
-                    <div className="verification-info">
-                        <p><strong>This listing is free.</strong></p>
-                        <p>A verification code will be exchanged between you and the renter to confirm the rental.</p>
-                        {/* You might add more instructions here */}
-                    </div>
-                )}
-
-                <label>Upload Image</label>
-                <div className="file-upload-container">
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setImage(e.target.files[0])}
-                        className="file-input"
-                    />
-
-                    {previewUrl && (
-                        <div className="image-preview">
-                            <img src={previewUrl} alt="Preview" />
-                        </div>
-                    )}
-                </div>
-
-                <label>Phone Number</label>
-                <input
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="Enter your phone number"
-                    required // Consider if this should be required
-                />
-
-                <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className={isSubmitting ? "submitting" : ""}
-                >
-                    {isSubmitting ? "Posting..." : "Post Listing"}
-                </button>
-            </form>
-
-            {message && (
-                <div className={`message ${message.startsWith('❌') ? 'error' : 'success'}`}>
-                    {message}
-                </div>
-            )}
+  return (
+    <div className="post-listing-form">
+      <h2>Post a New Listing</h2>
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="title">Title:</label>
+          <input type="text" id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
         </div>
-    );
+        <div className="form-group">
+          <label htmlFor="size">Size:</label>
+          <input type="text" id="size" value={size} onChange={(e) => setSize(e.target.value)} required />
+        </div>
+        <div className="form-group">
+          <label htmlFor="itemType">Item Type:</label>
+          <input type="text" id="itemType" value={itemType} onChange={(e) => setItemType(e.target.value)} required />
+        </div>
+        <div className="form-group">
+          <label htmlFor="condition">Condition:</label>
+          <select id="condition" value={condition} onChange={(e) => setCondition(e.target.value)} required>
+            <option value="">Select Condition</option>
+            <option value="new">New</option>
+            <option value="like new">Like New</option>
+            <option value="excellent">Excellent</option>
+            <option value="good">Good</option>
+            <option value="fair">Fair</option>
+          </select>
+        </div>
+        <div className="form-group">
+          <label htmlFor="washInstructions">Wash Instructions:</label>
+          <textarea id="washInstructions" value={washInstructions} onChange={(e) => setWashInstructions(e.target.value)} />
+        </div>
+        <div className="form-group">
+          <label htmlFor="startDate">Start Date:</label>
+          <input type="date" id="startDate" value={startDate} onChange={handleStartDateChange} required />
+        </div>
+        <div className="form-group">
+          <label htmlFor="endDate">End Date:</label>
+          <input type="date" id="endDate" value={endDate} onChange={handleEndDateChange} required />
+        </div>
+        <div className="form-group">
+          <label htmlFor="pricePerDay">Price Per Day ($):</label>
+          <input type="number" id="pricePerDay" value={pricePerDay} onChange={handlePricePerDayChange} required />
+        </div>
+        <div className="form-group">
+          <label>Total Price ($):</label>
+          <input type="text" value={totalPrice.toFixed(2)} readOnly />
+        </div>
+        <div className="form-group">
+          <label htmlFor="image">Image Upload:</label>
+          <input type="file" id="image" accept="image/*" onChange={handleImageChange} required />
+          {uploadProgress > 0 && uploadProgress < 100 && (
+            <div className="upload-progress-bar" style={{ width: `${uploadProgress}%` }}>
+              {uploadProgress}%
+            </div>
+          )}
+          {uploadError && <p className="error">{uploadError}</p>}
+        </div>
+        <div className="form-group">
+          <label htmlFor="phoneNumber">Phone Number:</label>
+          <input type="tel" id="phoneNumber" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
+        </div>
+        <div className="form-group">
+          <label htmlFor="contactEmail">Contact Email:</label>
+          <input type="email" id="contactEmail" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} required />
+        </div>
+        <button type="submit" disabled={uploadProgress > 0 && uploadProgress < 100}>Post Listing</button>
+        {postSuccess && <p className="success">Listing posted successfully!</p>}
+      </form>
+    </div>
+  );
 }
 
 export default PostListingForm;
