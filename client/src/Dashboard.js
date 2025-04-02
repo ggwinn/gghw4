@@ -3,226 +3,196 @@ import axios from 'axios';
 import PostListingForm from './PostListingForm';
 import ListingDetailModal from './ListingDetailModal';
 import './Dashboard.css';
-import './NavigationBar.css';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
-function Dashboard({ name, email, onLogout }) {
-    const [activeTab, setActiveTab] = useState('dashboard');
-    const [showForm, setShowForm] = useState(false);
+function Dashboard({ email }) {
     const [listings, setListings] = useState([]);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [filteredResults, setFilteredResults] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState('');
+    const [isPosting, setIsPosting] = useState(false);
     const [selectedListing, setSelectedListing] = useState(null);
-    const [sortBy, setSortBy] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchStartDate, setSearchStartDate] = useState(null);
+    const [searchEndDate, setSearchEndDate] = useState(null);
+    const [searchResults, setSearchResults] = useState([]);
+    const [activeTab, setActiveTab] = useState('community'); // 'community', 'listings', 'rentals'
+    const [userRentals, setUserRentals] = useState([]);
 
     useEffect(() => {
-        const fetchListings = async () => {
-            setIsLoading(true);
-            try {
-                const response = await axios.get('/search?query=');
-                setListings(response.data.listings || []);
-                setFilteredResults(response.data.listings || []);
-                setError('');
-            } catch (error) {
-                console.error('Error fetching listings:', error);
-                setError('Failed to load listings. Please try again later.');
-            } finally {
-                setIsLoading(false);
-            }
-        };
         fetchListings();
+        fetchUserRentals();
     }, []);
 
-    useEffect(() => {
-        let currentResults = [...listings];
-
-        if (searchQuery.trim()) {
-            currentResults = listings.filter(listing =>
-                listing.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                listing.size?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                listing.itemType?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                listing.condition?.toLowerCase().includes(searchQuery.toLowerCase())
-            );
+    const fetchListings = async () => {
+        try {
+            const response = await axios.get('/listings');
+            setListings(response.data.listings);
+        } catch (error) {
+            console.error('Error fetching listings:', error);
         }
+    };
 
-        if (sortBy === 'price_low_high') {
-            currentResults.sort((a, b) => parseFloat(a.pricePerDay) - parseFloat(b.pricePerDay));
-        } else if (sortBy === 'price_high_low') {
-            currentResults.sort((a, b) => parseFloat(b.pricePerDay) - parseFloat(a.pricePerDay));
+    const fetchUserRentals = async () => {
+        try {
+            const response = await axios.get('/api/rentals', {
+                headers: { 'user-id': email }
+            });
+            setUserRentals(response.data.rentals);
+        } catch (error) {
+            console.error('Error fetching user rentals:', error);
         }
+    };
 
-        setFilteredResults(currentResults);
-    }, [searchQuery, listings, sortBy]);
+    const handlePostListingClick = () => {
+        setIsPosting(true);
+    };
+
+    const handleClosePostListingForm = () => {
+        setIsPosting(false);
+        fetchListings(); // Refresh listings after posting
+    };
 
     const handleListingClick = (listing) => {
         setSelectedListing(listing);
     };
 
-    const handleCloseModal = () => {
+    const handleCloseListingModal = () => {
         setSelectedListing(null);
+        fetchListings(); // Refresh listings after interaction
+        fetchUserRentals(); // Refresh rentals after interaction
     };
 
-    const handleSortChange = (event) => {
-        setSortBy(event.target.value);
+    const handleSearchChange = (e) => {
+        setSearchQuery(e.target.value);
     };
 
-    const renderPlaceholderContent = () => {
-        const placeholders = [/* ... your placeholder data ... */];
-        return (
+    const handleSearchDateChange = (dates) => {
+        const [start, end] = dates;
+        setSearchStartDate(start);
+        setSearchEndDate(end);
+    };
+
+    const handleSearchSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const response = await axios.get('/search', {
+                params: { query: searchQuery, startDate: searchStartDate, endDate: searchEndDate }
+            });
+            setSearchResults(response.data.listings);
+            setActiveTab('community'); // Switch to community tab to show search results
+        } catch (error) {
+            console.error('Error searching listings:', error);
+        }
+    };
+
+    const listingsToDisplay = activeTab === 'community' ? searchResults.length > 0 ? searchResults : listings : listings;
+
+    const renderCommunityContent = () => (
+        <div>
+            <h2>Community Listings</h2>
+            <form onSubmit={handleSearchSubmit} className="search-form">
+                <input
+                    type="text"
+                    placeholder="Search by title, size, type, condition"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                />
+                <DatePicker
+                    selectsRange
+                    startDate={searchStartDate}
+                    endDate={searchEndDate}
+                    onChange={handleSearchDateChange}
+                    placeholderText="Select Date Range"
+                    className="date-range-picker"
+                />
+                <button type="submit">Search</button>
+            </form>
             <div className="listings-grid">
-                {placeholders.map((item) => (
-                    <div
-                        key={item.id}
-                        className="listing-card"
-                        onClick={() => handleListingClick(item)}
-                    >
-                        <img src={item.imageURL} alt={item.title} />
-                        <div className="listing-info">
-                            <h3>{item.title}</h3>
-                            <p><strong>Size:</strong> {item.size}</p>
-                            <p><strong>Type:</strong> {item.itemType}</p>
-                            <p><strong>${item.pricePerDay}/day</strong></p>
-                        </div>
+                {listingsToDisplay.map(listing => (
+                    <div key={listing.id} className="listing-card" onClick={() => handleListingClick(listing)}>
+                        <img src={listing.imageURL} alt={listing.title} />
+                        <h3>{listing.title}</h3>
+                        <p>Size: {listing.size}</p>
+                        <p>Type: {listing.itemType}</p>
+                        <p>Price: ${listing.pricePerDay}</p>
                     </div>
                 ))}
             </div>
-        );
-    };
-
-    const renderDashboardContent = () => (
-        <>
-            {/* Search Bar */}
-            <div className="search-section">
-                <input
-                    type="text"
-                    placeholder="Search by title, size, type..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                {/* Sorting Options */}
-                <select value={sortBy} onChange={handleSortChange} className="sort-dropdown">
-                    <option value="">Sort By</option>
-                    <option value="price_low_high">Price: Low to High</option>
-                    <option value="price_high_low">Price: High to Low</option>
-                </select>
-            </div>
-
-            {/* Toggle Post Listing Form */}
-            <button className="post-listing-btn" onClick={() => setShowForm(!showForm)}>
-                {showForm ? "Cancel" : "Post a Listing"}
-            </button>
-
-            {/* Show Post Listing Form */}
-            {showForm && <PostListingForm email={email} onClose={() => setShowForm(false)} />}
-
-            {/* Clothing Listings Grid */}
-            {!showForm && (
-                <>
-                    <h3>Clothing Listings</h3>
-                    {isLoading ? (
-                        <p className="status-message">Loading listings...</p>
-                    ) : error ? (
-                        <div className="error-container">
-                            <p className="error-message">{error}</p>
-                            {renderPlaceholderContent()}
-                        </div>
-                    ) : filteredResults.length > 0 ? (
-                        <div className="listings-grid">
-                            {filteredResults.map((listing) => (
-                                <div
-                                    key={listing.id}
-                                    className="listing-card"
-                                    onClick={() => handleListingClick(listing)}
-                                >
-                                    <img
-                                        src={listing.imageURL || "https://via.placeholder.com/300x200?text=No+Image"}
-                                        alt={listing.title}
-                                    />
-                                    <div className="listing-info">
-                                        <h3>{listing.title}</h3>
-                                        <p><strong>Size:</strong> {listing.size}</p>
-                                        <p><strong>Type:</strong> {listing.itemType}</p>
-                                        <p><strong>${listing.pricePerDay}/day</strong></p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : searchQuery ? (
-                        <p className="status-message">No items matching "{searchQuery}" found.</p>
-                    ) : (
-                        <div>
-                            <p className="status-message">No listings available. Be the first to post!</p>
-                            {renderPlaceholderContent()}
-                        </div>
-                    )}
-                </>
-            )}
-
-            {/* Listing Detail Modal */}
-            {selectedListing && (
-                <ListingDetailModal
-                    listing={selectedListing}
-                    onClose={handleCloseModal}
-                    userEmail={email}
-                />
-            )}
-        </>
-    );
-
-    const renderAboutContent = () => (
-        <div className="about-section">
-            <h2>About Campus Closet</h2>
-            <p className="mission-statement">
-                Our mission at Campus Closet is to empower the AUC community by providing a sustainable and accessible platform to rent, buy, sell, and swap clothing. We facilitate sharing for events like Founders Day, everyday needs, and creative expression, fostering community, saving resources, and celebrating individual style.
-            </p>
-            {/* You can add more information about your company here */}
         </div>
     );
 
-    const renderCommunityContent = () => (
-        <div className="community-section">
-            <h2>Community</h2>
-            <p>This is our page of to highlight AUC clothing initiatives and vendors</p>
+    const renderListingsTab = () => (
+        <div>
+            <h2>Your Listings</h2>
+            <button onClick={handlePostListingClick}>Post a New Listing</button>
+            <div className="listings-grid">
+                {listings.filter(listing => listing.user === email).map(listing => (
+                    <div key={listing.id} className="listing-card" onClick={() => handleListingClick(listing)}>
+                        <img src={listing.imageURL} alt={listing.title} />
+                        <h3>{listing.title}</h3>
+                        <p>Size: {listing.size}</p>
+                        <p>Type: {listing.itemType}</p>
+                        <p>Price: ${listing.pricePerDay}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 
-    
-            {/* You can add more community content or vendor listings here */}
+    const renderRentalsTab = () => (
+        <div>
+            <h2>Your Rentals</h2>
+            {userRentals.length > 0 ? (
+                <div className="rentals-list">
+                    {userRentals.map(rental => (
+                        <div key={rental.id} className="rental-item">
+                            {rental.listing && (
+                                <>
+                                    <h3>{rental.listing.title}</h3>
+                                    <p>Rented from: {new Date(rental.start_date).toLocaleDateString()} to {new Date(rental.end_date).toLocaleDateString()}</p>
+                                    <p>Total Paid: ${rental.total_amount}</p>
+                                    {/* Add more details as needed */}
+                                </>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <p>No rentals yet.</p>
+            )}
         </div>
     );
 
     return (
         <div className="dashboard">
-            {/* Navigation Bar */}
-            <div className="navigation-bar">
+            <div className="dashboard-nav">
                 <button
-                    className={`nav-button ${activeTab === 'dashboard' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('dashboard')}
-                >
-                    Dashboard
-                </button>
-                <button
-                    className={`nav-button ${activeTab === 'about' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('about')}
-                >
-                    About
-                </button>
-                <button
-                    className={`nav-button ${activeTab === 'community' ? 'active' : ''}`}
+                    className={activeTab === 'community' ? 'active' : ''}
                     onClick={() => setActiveTab('community')}
                 >
                     Community
                 </button>
+                <button
+                    className={activeTab === 'listings' ? 'active' : ''}
+                    onClick={() => setActiveTab('listings')}
+                >
+                    Your Listings
+                </button>
+                <button
+                    className={activeTab === 'rentals' ? 'active' : ''}
+                    onClick={() => setActiveTab('rentals')}
+                >
+                    Your Rentals
+                </button>
             </div>
 
-            <h2>Welcome, {name}!</h2>
+            <div className="dashboard-content">
+                {activeTab === 'community' && renderCommunityContent()}
+                {activeTab === 'listings' && renderListingsTab()}
+                {activeTab === 'rentals' && renderRentalsTab()}
+            </div>
 
-            {/* Render content based on the active tab */}
-            {activeTab === 'dashboard' && renderDashboardContent()}
-            {activeTab === 'about' && renderAboutContent()}
-            {activeTab === 'community' && renderCommunityContent()}
-
-            {/* Logout Button */}
-            <button className="logout-btn" onClick={onLogout}>Log Out</button>
+            {isPosting && <PostListingForm email={email} onClose={handleClosePostListingForm} />}
+            {selectedListing && <ListingDetailModal listing={selectedListing} onClose={handleCloseListingModal} userEmail={email} />}
         </div>
     );
 }

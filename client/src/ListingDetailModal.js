@@ -29,7 +29,7 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
     } else {
       setTotalPrice(0);
     }
-  }, [startDate, endDate, listing.pricePerDay]);
+  }, [startDate, endDate, listing?.pricePerDay]);
 
   // Initialize Square payment form
   useEffect(() => {
@@ -67,7 +67,6 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
   const handlePayment = async (event) => {
     event.preventDefault();
 
-    // Update the validation to include pickup and dropoff locations
     if (!startDate || !endDate || !pickupLocation || !dropoffLocation) {
       setErrorMessage('Please select rental dates and specify pickup/drop-off locations.');
       return;
@@ -98,8 +97,8 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         userEmail: userEmail,
-        pickupLocation: pickupLocation, // Add pickup location to the request
-        dropoffLocation: dropoffLocation // Add drop-off location to the request
+        pickupLocation: pickupLocation,
+        dropoffLocation: dropoffLocation
       });
 
       if (response.data.success) {
@@ -140,13 +139,10 @@ function ListingDetailModal({ listing, onClose, userEmail }) {
               <p>From {availableStartDate.toLocaleDateString()} to {availableEndDate.toLocaleDateString()}</p>
             </div>
 
-            {/* Conditionally render the contact info section */}
             {paymentStatus === 'success' && (
               <div className="contact-info">
                 <h3>Seller Contact Information</h3>
-                {/* Display the phone number from the listing data */}
                 <p><strong>Phone:</strong> {listing.phone_number}</p>
-                {/* Display the contact email from the listing data */}
                 <p><strong>Email:</strong> {listing.contact_email}</p>
               </div>
             )}

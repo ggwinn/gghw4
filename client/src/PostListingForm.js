@@ -8,7 +8,7 @@ import './Dashboard.css'; // Reusing Dashboard styles
  * PostListingForm Component
  *
  * This component provides a form for users to create and submit new clothing listings.
- * It includes fields for item details, availability, pricing, and image upload.
+ * It includes fields for item details, availability, pricing (optional), and image upload.
  *
  * @param {object} props
  * @param {string} props.email - The email of the logged-in user, used to associate the listing with the user.
@@ -23,24 +23,24 @@ function PostListingForm({ email, onClose }) {
     const [washInstructions, setWashInstructions] = useState('');
     const [startDate, setStartDate] = useState(null);
     const [endDate, setEndDate] = useState(null);
+    const [rentalType, setRentalType] = useState('rent'); // Default to 'rent'
     const [pricePerDay, setPricePerDay] = useState('');
     const [totalPrice, setTotalPrice] = useState(0);
     const [image, setImage] = useState(null);
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [previewUrl, setPreviewUrl] = useState('');
-    // New state for phone number input
     const [phoneNumber, setPhoneNumber] = useState('');
 
-    // Calculate total price when relevant inputs change
+    // Calculate total price when relevant inputs change and rentalType is 'rent'
     useEffect(() => {
-        if (startDate && endDate && pricePerDay) {
+        if (rentalType === 'rent' && startDate && endDate && pricePerDay) {
             const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
             setTotalPrice(days * parseFloat(pricePerDay));
         } else {
             setTotalPrice(0);
         }
-    }, [startDate, endDate, pricePerDay]); // Recalculate when dates or price change
+    }, [startDate, endDate, pricePerDay, rentalType]);
 
     // Reset message after 5 seconds
     useEffect(() => {
@@ -50,7 +50,7 @@ function PostListingForm({ email, onClose }) {
             }, 5000);
             return () => clearTimeout(timer);
         }
-    }, [message]); // Clear message after a delay
+    }, [message]);
 
     // Generate image preview when file is selected
     useEffect(() => {
@@ -63,13 +63,13 @@ function PostListingForm({ email, onClose }) {
         } else {
             setPreviewUrl('');
         }
-    }, [image]); // Update image preview
+    }, [image]);
 
     /**
      * handlePostListing
      *
      * Handles the submission of the listing form. It gathers the form data,
-     * including the image, and sends it to the server via an API call.
+     * including the image and rental type, and sends it to the server via an API call.
      * It also manages the loading state and displays success or error messages.
      *
      * @param {Event} e - The form submit event.
@@ -79,7 +79,6 @@ function PostListingForm({ email, onClose }) {
         setIsSubmitting(true);
         setMessage('');
 
-        // Basic form validation
         if (!startDate || !endDate) {
             setMessage('Please select both start and end dates');
             setIsSubmitting(false);
@@ -92,7 +91,7 @@ function PostListingForm({ email, onClose }) {
             return;
         }
 
-        if (!pricePerDay || isNaN(parseFloat(pricePerDay)) || parseFloat(pricePerDay) <= 0) {
+        if (rentalType === 'rent' && (!pricePerDay || isNaN(parseFloat(pricePerDay)) || parseFloat(pricePerDay) <= 0)) {
             setMessage('Please enter a valid price per day');
             setIsSubmitting(false);
             return;
@@ -106,10 +105,12 @@ function PostListingForm({ email, onClose }) {
         formData.append('washInstructions', washInstructions);
         formData.append('startDate', startDate.toISOString());
         formData.append('endDate', endDate.toISOString());
-        formData.append('pricePerDay', pricePerDay);
-        formData.append('totalPrice', totalPrice);
+        formData.append('rentalType', rentalType); // Send rental type to backend
+        if (rentalType === 'rent') {
+            formData.append('pricePerDay', pricePerDay);
+            formData.append('totalPrice', totalPrice);
+        }
         if (image) formData.append('image', image);
-        // Append the phone number to the form data
         formData.append('phoneNumber', phoneNumber);
 
         try {
@@ -117,7 +118,7 @@ function PostListingForm({ email, onClose }) {
                 headers: { 'Content-Type': 'multipart/form-data', 'user-id': email }
             });
             setMessage('✅ Listing posted successfully!');
-            // Reset form including phone number
+            // Reset form including rentalType
             setTitle('');
             setCondition('');
             setWashInstructions('');
@@ -128,8 +129,8 @@ function PostListingForm({ email, onClose }) {
             setImage(null);
             setPreviewUrl('');
             setPhoneNumber('');
+            setRentalType('rent'); // Reset to default
 
-            // Close form after delay
             setTimeout(() => {
                 onClose();
             }, 1500);
@@ -221,22 +222,56 @@ function PostListingForm({ email, onClose }) {
                     className="date-input"
                 />
 
-                <label>Price per day ($)</label>
-                <input
-                    type="number"
-                    value={pricePerDay}
-                    onChange={(e) => setPricePerDay(e.target.value)}
-                    min="0.01"
-                    step="0.01"
-                    placeholder="E.g., 4.99"
-                    required
-                />
+                <label>Rental Type</label>
+                <div>
+                    <input
+                        type="radio"
+                        id="rent"
+                        name="rentalType"
+                        value="rent"
+                        checked={rentalType === 'rent'}
+                        onChange={(e) => setRentalType(e.target.value)}
+                    />
+                    <label htmlFor="rent">Rent</label>
 
-                {totalPrice > 0 && (
-                    <p className="total-price">
-                        Total Price for {Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1} days:
-                        <span>${totalPrice.toFixed(2)}</span>
-                    </p>
+                    <input
+                        type="radio"
+                        id="free"
+                        name="rentalType"
+                        value="free"
+                        checked={rentalType === 'free'}
+                        onChange={(e) => setRentalType(e.target.value)}
+                    />
+                    <label htmlFor="free">Free</label>
+                </div>
+
+                {rentalType === 'rent' && (
+                    <>
+                        <label>Price per day ($)</label>
+                        <input
+                            type="number"
+                            value={pricePerDay}
+                            onChange={(e) => setPricePerDay(e.target.value)}
+                            min="0.01"
+                            step="0.01"
+                            placeholder="E.g., 4.99"
+                            required
+                        />
+                        {totalPrice > 0 && (
+                            <p className="total-price">
+                                Total Price for {Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1} days:
+                                <span>${totalPrice.toFixed(2)}</span>
+                            </p>
+                        )}
+                    </>
+                )}
+
+                {rentalType === 'free' && (
+                    <div className="verification-info">
+                        <p><strong>This listing is free.</strong></p>
+                        <p>A verification code will be exchanged between you and the renter to confirm the rental.</p>
+                        {/* You might add more instructions here */}
+                    </div>
                 )}
 
                 <label>Upload Image</label>
@@ -255,7 +290,6 @@ function PostListingForm({ email, onClose }) {
                     )}
                 </div>
 
-                {/* New input field for phone number */}
                 <label>Phone Number</label>
                 <input
                     type="tel"
